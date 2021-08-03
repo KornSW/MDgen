@@ -1,0 +1,10 @@
+﻿{
+  "inputFile": "..\\..\\Demo\\bin\\Demo.dll",
+  "template": "MvcControllers",
+  "interfaceTypeNamePattern": "MyBusinessNamespace.I*",
+  "modelTypeNameIncludePatterns": [
+    "MyBusinessNamespace.*"
+  ],
+  "generateSwashbuckleAttributesForControllers": true,
+  "customAttributesPerControllerMethod": "RequireBaererAuth(\"{C}/{O}\")"
+}

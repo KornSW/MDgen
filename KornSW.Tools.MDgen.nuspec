@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>KornSW.Tools.MDgen</id>
+    <version>1.0.0-localbuild</version>
+    <title>KornSW.Tools.MDgen</title>
+    <authors>KornSW</authors>
+    <owners>KornSW</owners>
+    <copyright>KornSW</copyright>
+    <description>provides a code generation tool for generating Markdown documentations for given interfaces</description>
+    <tags>XmlDoc Markdown Documentation Generation T4</tags>
+    <!-- https://spdx.org/licenses/ -->
+    <license type="expression">GPL-3.0-only</license>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <icon>PackageIcon.png</icon>
+    <projectUrl>https://github.com/KornSW/MDgen</projectUrl>
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+    <!-- https://docs.microsoft.com/en-us/nuget/create-packages/creating-a-package#from-a-convention-based-working-directory -->
+    <file src="PackageIcon.png" target="" />
+
+    <file src=".\GeneratorExe\deploy\init.ps1" target="tools" />
+    
+    <file src=".\GeneratorExe\deploy\MDgen.ttinclude" target="tools/(tools)" />
+    <file src=".\GeneratorExe\deploy\MDgen.Readme.txt" target="tools/(tools)" />
+    <file src=".\Demo\MDgen.Sample.tt" target="tools/(tools)" />
+    
+    <file src=".\GeneratorExe\bin\MDgen.exe" target="tools/bin" />
+    <file src=".\GeneratorExe\bin\MDgen.runtimeconfig.json" target="tools/bin" />
+    <file src=".\GeneratorExe\bin\MDgen.dll" target="tools/bin" />
+    <file src=".\GeneratorExe\bin\Newtonsoft.Json.dll" target="tools/bin" />
+    <file src=".\GeneratorExe\bin\EntityAnnotations.dll" target="tools/bin" />    
+    
+  </files>
+</package>
