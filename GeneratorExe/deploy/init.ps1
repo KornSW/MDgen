@@ -23,12 +23,18 @@ if (!(test-path $deployTarget)) {
 Copy-Item "$deploySource/*" $deployTarget -Recurse -Force
 
 $ttIncludeFile = join-path $deployTarget 'MDgen.ttinclude'
+
+$newInstall = "N"
+if (!(test-path $ttIncludeFile)) {
+  $newInstall = "Y"
+}
+
 $profileDir = $Env:USERPROFILE
 $escapedProfileDir = [regex]::escape($profileDir)
 
 #if pkg-path starts with solution-dir (or one above), then use a relative path!
-$pkgBinaries = $pkgBinaries -replace [regex]::escape((Get-Item $solutionFileName).Directory.fullname), '..'
-$pkgBinaries = $pkgBinaries -replace [regex]::escape((Get-Item $solutionFileName).Directory.parent.fullname), '..\..'
+$pkgBinaries = $pkgBinaries -replace [regex]::escape((Get-Item $solutionFileName).Directory.fullname), '.'
+$pkgBinaries = $pkgBinaries -replace [regex]::escape((Get-Item $solutionFileName).Directory.parent.fullname), '..'
 
 #if pkg-path starts is within the global directory in userprofile, then use placeholder
 $pkgBinaries = $pkgBinaries -replace $escapedProfileDir, '%USERPROFILE%'
@@ -39,18 +45,22 @@ $pkgBinaries = $pkgBinaries -replace [regex]::escape('\'), '\\'
 
 Write-Host "MDgen-Tools installed..."
 
-# create the solution items folder if it doesn't exist
-$deployFolder = $solution.Projects | where-object { $_.ProjectName -eq "Solution Items" } | select -first 1
-if(!$deployFolder) {
-    $deployFolder = $solution.AddSolutionFolder("Solution Items")
-}
+  #if ($newInstall -eq "Y") {
 
-$folderItems = Get-Interface $deployFolder.ProjectItems ([EnvDTE.ProjectItems])
+  # create the solution items folder if it doesn't exist
+  $deployFolder = $solution.Projects | where-object { $_.ProjectName -eq "Solution Items" } | select -first 1
+  if(!$deployFolder) {
+      $deployFolder = $solution.AddSolutionFolder("Solution Items")
+  }
 
-ls $deployTarget | where-object { $_.Name -eq "MDgen.Readme.txt" } | foreach-object { 
-    $folderItems.AddFromFile($_.FullName) > $null
-} > $null
+  $folderItems = Get-Interface $deployFolder.ProjectItems ([EnvDTE.ProjectItems])
 
-ls $deployTarget | where-object { $_.Name -eq "MDgen.Sample.tt" } | foreach-object { 
-    $folderItems.AddFromFile($_.FullName) > $null
-} > $null
+  ls $deployTarget | where-object { $_.Name -eq "MDgen.Readme.txt" } | foreach-object { 
+      $folderItems.AddFromFile($_.FullName) > $null
+  } > $null
+
+  ls $deployTarget | where-object { $_.Name -eq "MDgen.Sample.tt" } | foreach-object { 
+      $folderItems.AddFromFile($_.FullName) > $null
+  } > $null
+
+#}

@@ -159,10 +159,12 @@ namespace CodeGeneration.Default {
 
       }//foreach Interface
 
+      writer.WriteLine("");
+      writer.WriteLine("");
+      writer.WriteLine("");
+
       if (modelTypes.Any()) {
-        writer.WriteLine("");
-        writer.WriteLine("");
-        writer.WriteLine("");
+
         writer.WriteLine($"# Models:");
 
         foreach (var modelType in modelTypes.OrderBy((t)=> t.FullName)) {
