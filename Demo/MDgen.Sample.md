@@ -10,7 +10,7 @@ this is a summary with [Hyperlink](https://github.com/KornSW/MDgen)
 |Name|Type|Description|
 |----|----|-----------|
 |a|String|**IN**-Param (required)|
-|b|Int32|**OUT**-Param (required)|
+|b|Int32|**OUT**-Param |
 **return value:** Boolean
 
 
@@ -371,7 +371,6 @@ capabilities of an IRepository.
 #### Fields:
 |Name|Type|Description|
 |----|----|-----------|
-|All|[RepositoryCapabilities](#RepositoryCapabilities)|(optional): (from 'FUSE-fx.RepositoryContract') An property bag which holds information about the implemented/supported capabilities of an IRepository.|
 |CanReadContent|Boolean? *(nullable)*|(optional): Indicates, that this repository offers access to load entities(classes) or some their entity fields (if this is false, then only EntityRefs are accessable)|
 |CanUpdateContent|Boolean? *(nullable)*|(optional)|
 |CanAddNewEntities|Boolean? *(nullable)*|(optional)|
@@ -380,3 +379,4 @@ capabilities of an IRepository.
 |SupportsKeyUpdate|Boolean? *(nullable)*|(optional)|
 |SupportsStringBasedSearchExpressions|Boolean? *(nullable)*|(optional)|
 |RequiresExternalKeys|Boolean? *(nullable)*|(optional): Indicates, that entities can only be added to this repository, if ther key fields are pre-initialized by the caller. If false, then the persistence-technology behind the repository implementation will auto-generate a new key by its own.|
+

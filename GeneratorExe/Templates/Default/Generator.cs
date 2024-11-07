@@ -105,7 +105,7 @@ namespace CodeGeneration.Default {
               if (svcMthPrm.IsOptional) {
                 description = description + "(optional)";
               }
-              else {
+              else if (!svcMthPrm.IsOut) {
                 description = description + "(required)";
               }
               if (!String.IsNullOrWhiteSpace(svcMthPrmDoc)) {
@@ -187,7 +187,7 @@ namespace CodeGeneration.Default {
             writer.WriteLine(WriterForMD.TransformHyperlinksWithinSummary(mtDoc));
           }
 
-          var props = modelType.GetProperties();
+          var props = modelType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
           writer.WriteLine($"#### Fields:");
 
