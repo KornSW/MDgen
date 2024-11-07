@@ -11,7 +11,7 @@ namespace MyBusinessNamespace {
   /// <summary>
   /// this is a summary with <see href="https://github.com/KornSW/MDgen">Hyperlink</see>
   /// </summary>
-  public interface IFooAPI {
+  public interface IFooAPI : System.Data.Fuse.IRepository<TestModel, string> {
 
     bool Foooo(string a, out int b);
 
@@ -27,6 +27,15 @@ namespace MyBusinessNamespace {
 
   }
 
+  public interface IApiBase{
+
+    /// <summary>
+    /// descibes if the base is usable
+    /// </summary>
+    /// <returns></returns>
+    bool BaseIsUsable();
+
+  }
 
   /// <summary>
   /// MMMMMMMMMMMMMMMMMMM

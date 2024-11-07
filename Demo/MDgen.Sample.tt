@@ -21,9 +21,11 @@
            // Source:
            inputFile = Host.ResolvePath(".\\bin\\Demo.dll"),
            interfaceTypeNamePattern = "MyBusinessNamespace.I*",
+           assemblyResolveDir = Host.ResolvePath(".\\bin"),
 
            requireXmlDocForNamespaces = new string[] { 
-             "MyBusinessNamespace"
+             "MyBusinessNamespace",
+             "System.Data.Fuse"
            },
 
            // Output:
@@ -34,7 +36,8 @@
            countOfPrefixCharsToRemove = 1,
 
            namespaceWildcardsForModelImport = new string[] { 
-             "MyBusinessNamespace.*"
+             "MyBusinessNamespace.*",
+             "System.Data.Fuse.*"
            }
 
          //////////////////////////////////////////////////////////////////////////////////////

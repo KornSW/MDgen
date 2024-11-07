@@ -55,7 +55,10 @@ namespace CodeGeneration.Default {
         writer.WriteLine("");
         writer.WriteLine($"### Methods:");
 
-        foreach (MethodInfo svcMth in tp.GetMethods()) {
+        var methods = new List<MethodInfo>();
+        this.CollectMethodsRecursive(methods, tp);
+
+        foreach (MethodInfo svcMth in methods) {
           string svcMthDoc = XmlCommentAccessExtensions.GetDocumentation(svcMth, false);
           writer.WriteLine("");
           writer.WriteLine("");
@@ -66,69 +69,75 @@ namespace CodeGeneration.Default {
             writer.WriteLine(WriterForMD.TransformHyperlinksWithinSummary(svcMthDoc));
           }
 
-          writer.WriteLine($"#### Parameters:");
-
-          writer.WriteLine($"|Name|Type|Description|");
-          writer.WriteLine($"|----|----|-----------|");
-
           var svcMthPrms = svcMth.GetParameters();
 
           if (!svcMthPrms.Any()) {
-            writer.WriteLine($"|(none)|||");
+            writer.WriteLine("no parameters");
           }
+          else {
 
-          foreach (ParameterInfo svcMthPrm in svcMthPrms) {
-            string svcMthPrmDoc = XmlCommentAccessExtensions.GetDocumentation(svcMthPrm);
-            if (String.IsNullOrWhiteSpace(svcMthPrmDoc)) {
-              svcMthPrmDoc = XmlCommentAccessExtensions.GetDocumentation(svcMthPrm.ParameterType);
-            }
-            //directlyUsedModelTypes.Add(svcMthPrm.ParameterType);
+            writer.WriteLine($"#### Parameters:");
 
-            string description;
-            if (svcMthPrm.IsOut) {
-              description = "**OUT**-Param ";
-            }
-            else if (svcMthPrm.ParameterType.IsByRef) {
-              description = "**IN/OUT**-Param ";
-            }
-            else {
-              description = "**IN**-Param ";
-            }
-            if (svcMthPrm.IsOptional) {
-              description = description + "(optional)";
-            }
-            else {
-              description = description + "(required)";
-            }
-            if (!String.IsNullOrWhiteSpace(svcMthPrmDoc)) {
-              description = description + ": " + svcMthPrmDoc;
+            writer.WriteLine($"|Name|Type|Description|");
+            writer.WriteLine($"|----|----|-----------|");
+
+            //if (!svcMthPrms.Any()) {
+            //  writer.WriteLine($"|(none)|||");
+            //}
+
+            foreach (ParameterInfo svcMthPrm in svcMthPrms) {
+              string svcMthPrmDoc = XmlCommentAccessExtensions.GetDocumentation(svcMthPrm);
+              if (String.IsNullOrWhiteSpace(svcMthPrmDoc)) {
+                svcMthPrmDoc = XmlCommentAccessExtensions.GetDocumentation(svcMthPrm.ParameterType);
+              }
+              //directlyUsedModelTypes.Add(svcMthPrm.ParameterType);
+
+              string description;
+              if (svcMthPrm.IsOut) {
+                description = "**OUT**-Param ";
+              }
+              else if (svcMthPrm.ParameterType.IsByRef) {
+                description = "**IN/OUT**-Param ";
+              }
+              else {
+                description = "**IN**-Param ";
+              }
+              if (svcMthPrm.IsOptional) {
+                description = description + "(optional)";
+              }
+              else {
+                description = description + "(required)";
+              }
+              if (!String.IsNullOrWhiteSpace(svcMthPrmDoc)) {
+                description = description + ": " + svcMthPrmDoc;
+              }
+
+              string pTypeName;
+              bool nullable;
+              bool array;
+              Type realType;
+              if (svcMthPrm.IsOut) {
+                pTypeName = svcMthPrm.ParameterType.GetElementType().GetTypeNameSave(out nullable, out realType, out array);
+              }
+              else {
+                pTypeName = svcMthPrm.ParameterType.GetTypeNameSave(out nullable, out realType, out array);
+              }
+
+              if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
+                pTypeName = $"[{pTypeName}](#{realType.GetTypeNameSave()})";
+              }
+              if (array) {
+                pTypeName = pTypeName + "[] *(array)*";
+              }
+              if (nullable || (svcMthPrm.IsOptional && svcMthPrm.ParameterType.IsValueType)) {
+                pTypeName = pTypeName + "? *(nullable)*";
+                //initializer = " = null;";
+              }
+
+              writer.WriteLine($"|{svcMthPrm.Name}|{pTypeName}|{description}|");
             }
 
-            string pTypeName;
-            bool nullable;
-            bool array;
-            Type realType;
-            if (svcMthPrm.IsOut) {
-              pTypeName = svcMthPrm.ParameterType.GetElementType().GetTypeNameSave(out nullable, out realType,out array);
-            }
-            else {
-              pTypeName = svcMthPrm.ParameterType.GetTypeNameSave(out nullable, out realType, out array);
-            }
-
-            if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
-              pTypeName = $"[{pTypeName}](#{realType.FullName})";
-            }
-            if (array) {
-              pTypeName = pTypeName + "[] *(array)*";
-            }
-            if (nullable || (svcMthPrm.IsOptional && svcMthPrm.ParameterType.IsValueType)) {
-              pTypeName = pTypeName + "? *(nullable)*";
-              //initializer = " = null;";
-            }
-
-            writer.WriteLine($"|{svcMthPrm.Name}|{pTypeName}|{description}|");
           }
-
           //writer.WriteLine("");
           //writer.WriteLine($"#### Return value:");
           if(svcMth.ReturnType != typeof(void)) {
@@ -140,7 +149,7 @@ namespace CodeGeneration.Default {
             pTypeName = svcMth.ReturnType.GetTypeNameSave(out nullable, out realType, out array);
 
             if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
-              pTypeName = $"[{pTypeName}](#{realType.FullName})";
+              pTypeName = $"[{pTypeName}](#{realType.GetTypeNameSave()})";
             }
             if (array) {
               pTypeName = pTypeName + "[] *(array)*";
@@ -171,7 +180,7 @@ namespace CodeGeneration.Default {
           writer.WriteLine("");
           writer.WriteLine("");
           writer.WriteLine("");
-          writer.WriteLine($"## {modelType.FullName}");
+          writer.WriteLine($"## {modelType.GetTypeNameSave()}");
 
           string mtDoc = XmlCommentAccessExtensions.GetDocumentation(modelType, singleLine: false);
           if (!String.IsNullOrWhiteSpace(mtDoc)) {
@@ -218,7 +227,7 @@ namespace CodeGeneration.Default {
             pTypeName = prop.PropertyType.GetTypeNameSave(out nullable, out realType,out array);
             
             if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
-              pTypeName = $"[{pTypeName}](#{realType.FullName})";
+              pTypeName = $"[{pTypeName}](#{realType.GetTypeNameSave()})";
             }
             if (array) {
               pTypeName = pTypeName + "[] *(array)*";
@@ -240,6 +249,22 @@ namespace CodeGeneration.Default {
       }
     }
 
+    private void CollectMethodsRecursive(List<MethodInfo> buffer, Type t) {
+      if (t == typeof(object)) {
+        return;
+      }
+      foreach (MethodInfo mi in t.GetMethods()) {
+        if (!buffer.Contains(mi)) {
+          buffer.Add(mi);
+        }
+      }
+      foreach (Type subInterface in t.GetInterfaces()) {
+        this.CollectMethodsRecursive(buffer, subInterface);
+      }
+      if (t.BaseType != null) {
+        this.CollectMethodsRecursive(buffer, t.BaseType);
+      }
+    }
 
     private void CrawlReferences(Type currentType, List<Type> modelTypes, string[] wc) {
 
@@ -273,7 +298,10 @@ namespace CodeGeneration.Default {
     private bool TypeMatchesModelWildCard(Type t, string[] namespaceWildcardsForModelImport) {
       foreach (var nswc in namespaceWildcardsForModelImport) {
         string pattern = "^(" + Regex.Escape(nswc).Replace("\\*", ".*?") + ")$";
-        if (Regex.IsMatch(t.FullName, pattern)) {
+
+
+        string sinitizedFullName = t.Namespace + "." + t.GetTypeNameSave(out var d1, out var d2, out var d3);
+        if (Regex.IsMatch(sinitizedFullName, pattern)) {
           return true;
         }
       }

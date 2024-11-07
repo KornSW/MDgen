@@ -12,9 +12,10 @@ namespace CodeGeneration {
 
   public class Program {
 
+    internal static RootCfg _RootCfg = null;
+
     static int Main(string[] args) {
       String cfgRawJson = null;
-      RootCfg rootCfg = null;
 
       AppDomain.CurrentDomain.AssemblyResolve += AppDomain_AssemblyResolve;
 
@@ -24,7 +25,7 @@ namespace CodeGeneration {
           if (args.Length > 0) {
             args[0] = Path.GetFullPath(args[0]);
             cfgRawJson = File.ReadAllText(args[0], Encoding.UTF8);
-            rootCfg = JsonConvert.DeserializeObject<RootCfg>(cfgRawJson);
+            _RootCfg = JsonConvert.DeserializeObject<RootCfg>(cfgRawJson);
           }
         }
         catch (Exception ex) {
@@ -36,7 +37,7 @@ namespace CodeGeneration {
           throw new Exception("ERROR reading '" + args[0] + "': " + ex.Message);
         }
 
-        if(rootCfg == null) {
+        if(_RootCfg == null) {
           Console.WriteLine("/* ERROR: wrong input!");
           Console.WriteLine("   please specify a filename via commandline-arg which has the following content:");
           Console.WriteLine(JsonConvert.SerializeObject(new RootCfg(), Formatting.Indented));
@@ -45,8 +46,8 @@ namespace CodeGeneration {
           throw new Exception("ERROR: wrong input: invalid configuration content!");
         }
 
-        if(rootCfg.waitForDebuggerSec > 0) {
-          var timeout = DateTime.Now.AddSeconds(rootCfg.waitForDebuggerSec);
+        if(_RootCfg.waitForDebuggerSec > 0) {
+          var timeout = DateTime.Now.AddSeconds(_RootCfg.waitForDebuggerSec);
           while (!Debugger.IsAttached && DateTime.Now < timeout) {
             Thread.Sleep(250);
           }
@@ -55,20 +56,24 @@ namespace CodeGeneration {
           }
         }
 
-        XmlCommentAccessExtensions.RequireXmlDocForNamespaces = rootCfg.requireXmlDocForNamespaces;
+        if (!string.IsNullOrWhiteSpace(_RootCfg.assemblyResolveDir)) {
+          AddResolvePath(_RootCfg.assemblyResolveDir);
+        }
 
-        CodeWriterBase langSpecificWriter = new WriterForMD(Console.Out, rootCfg);
+        XmlCommentAccessExtensions.RequireXmlDocForNamespaces = _RootCfg.requireXmlDocForNamespaces;
+
+        CodeWriterBase langSpecificWriter = new WriterForMD(Console.Out, _RootCfg);
        
-        if (String.IsNullOrWhiteSpace(rootCfg.template)) {
+        if (String.IsNullOrWhiteSpace(_RootCfg.template)) {
           throw new Exception($"No Template was selected!");
         }
-        else if (String.Equals(rootCfg.template, "Default", StringComparison.CurrentCultureIgnoreCase)) {
+        else if (String.Equals(_RootCfg.template, "Default", StringComparison.CurrentCultureIgnoreCase)) {
           var templateSpecificCfg  = JsonConvert.DeserializeObject<Default.Cfg>(cfgRawJson);
           var gen = new Default.Generator();
           gen.Generate(langSpecificWriter, templateSpecificCfg);
         }
         else {
-          throw new Exception($"Unknown Template '{rootCfg.template}'");
+          throw new Exception($"Unknown Template '{_RootCfg.template}'");
         }
 
       }
