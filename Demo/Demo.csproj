@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -31,10 +31,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>MDgen.Sample.tt</DependentUpon>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="UJMW-Gen.exe" />
   </ItemGroup>
 
   <ItemGroup>
