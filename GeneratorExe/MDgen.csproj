@@ -9,8 +9,8 @@
     <StartupObject>CodeGeneration.Program</StartupObject>
     <Authors>KornSW</Authors>
     <Company>KornSW</Company>
-    <FileVersion>1.1.1</FileVersion>
-    <Version>1.1.1</Version>
+    <FileVersion>1.1.2</FileVersion>
+    <Version>1.1.2</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
