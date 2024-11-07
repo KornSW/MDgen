@@ -31,7 +31,7 @@
     <file src=".\GeneratorExe\bin\MDgen.runtimeconfig.json" target="tools/bin" />
     <file src=".\GeneratorExe\bin\MDgen.dll" target="tools/bin" />
     <file src=".\GeneratorExe\bin\Newtonsoft.Json.dll" target="tools/bin" />
-    <file src=".\GeneratorExe\bin\EntityAnnotations.dll" target="tools/bin" />    
+    <file src=".\GeneratorExe\bin\FUSE-fx.EntityAnnotations.dll" target="tools/bin" />    
     
   </files>
 </package>
