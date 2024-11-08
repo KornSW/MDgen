@@ -9,6 +9,7 @@ namespace CodeGeneration {
 
     public string inputFile = null;
     public string interfaceTypeNamePattern = null;
+    public string[] interfaceTypeNamePatterns = null;
 
     public string assemblyResolveDir = null;
 

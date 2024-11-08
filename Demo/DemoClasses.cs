@@ -23,6 +23,8 @@ namespace MyBusinessNamespace {
     /// <param name="errorCode"> Bbbbbb </param>
     void AVoid(TestModel errorCode);
 
+
+
     bool TestNullableDt(DateTime? dt);
 
   }
@@ -33,7 +35,7 @@ namespace MyBusinessNamespace {
     /// descibes if the base is usable
     /// </summary>
     /// <returns></returns>
-    bool BaseIsUsable();
+    bool BaseIsUsable(Dictionary<string, TestNode> haha);
 
   }
 

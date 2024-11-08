@@ -25,21 +25,37 @@ namespace CodeGeneration.Default {
       Program.AddResolvePath(Path.GetDirectoryName(inputFileFullPath));
       Assembly ass = Assembly.LoadFile(inputFileFullPath);
 
-      Type[] types;
+      //load available types
+      Type[] allTypesOfAssembly;
       try {
-        types = ass.GetTypes();
+        allTypesOfAssembly = ass.GetTypes();
       }
       catch (ReflectionTypeLoadException ex) {
-        types = ex.Types.Where((t) => t != null).ToArray();
+        allTypesOfAssembly = ex.Types.Where((t) => t != null).ToArray();
       }
 
       //transform patterns to regex
-      cfg.interfaceTypeNamePattern = "^(" + Regex.Escape(cfg.interfaceTypeNamePattern).Replace("\\*", ".*?") + ")$";
-      types = types.Where((Type i) => Regex.IsMatch(i.FullName, cfg.interfaceTypeNamePattern)).ToArray();
+      List<Regex> patterns = new List<Regex>();
+      if (!string.IsNullOrWhiteSpace(cfg.interfaceTypeNamePattern)) {
+        patterns.Add(new Regex("^(" + Regex.Escape(cfg.interfaceTypeNamePattern).Replace("\\*", ".*?") + ")$", RegexOptions.Compiled));
+      }
+      if (cfg.interfaceTypeNamePatterns != null) {
+        foreach(string p in cfg.interfaceTypeNamePatterns) {
+          patterns.Add(new Regex("^(" + Regex.Escape(p).Replace("\\*", ".*?") + ")$", RegexOptions.Compiled));
+        }
+      }
 
-      var modelTypes = new List<Type>();
+      //filter the types
+      IEnumerable<Type> typesMatchingPattern = new Type[] { };
+      foreach (Regex r in patterns) {
+        Type[] matches = allTypesOfAssembly.Where((Type i) => r.IsMatch(i.FullName)).ToArray();
+        typesMatchingPattern = typesMatchingPattern.Union(matches);
+      }
+      Type[] typesToInclude = typesMatchingPattern.Distinct().ToArray();
 
-      foreach (Type tp in types) {
+      //iterate the types
+      var modelTypeBuffer = new List<Type>();
+      foreach (Type tp in typesToInclude) {
         string typeName = tp.Name;
         if(cfg.countOfPrefixCharsToRemove > 0) {
           typeName = typeName.Substring(cfg.countOfPrefixCharsToRemove);
@@ -112,25 +128,41 @@ namespace CodeGeneration.Default {
                 description = description + ": " + svcMthPrmDoc;
               }
 
+              Type cleanParamType = svcMthPrm.ParameterType;
+              if (svcMthPrm.IsOut) { //ist nochmal gewrapped!
+                cleanParamType = cleanParamType.GetElementType();
+              }
+
               string pTypeName;
               bool nullable;
               bool array;
-              Type realType;
-              if (svcMthPrm.IsOut) {
-                pTypeName = svcMthPrm.ParameterType.GetElementType().GetTypeNameSave(out nullable, out realType, out array);
-              }
-              else {
-                pTypeName = svcMthPrm.ParameterType.GetTypeNameSave(out nullable, out realType, out array);
+              string collectionType;
+              Type[] elementTypes;
+
+              pTypeName = cleanParamType.GetTypeNameSave(out nullable, out elementTypes, out array, out collectionType);
+              var elementTypeNamesOrLinks = new List<string>();
+              foreach (Type et in elementTypes) {
+                string argName = et.GetTypeNameSave();
+                if (this.ProcessCandidate(et, modelTypeBuffer, cfg.namespaceWildcardsForModelImport)) {
+                  elementTypeNamesOrLinks.Add($"[{argName}](#{argName})");
+                }
+                else {
+                  elementTypeNamesOrLinks.Add(argName);
+                }
               }
 
-              if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
-                pTypeName = $"[{pTypeName}](#{realType.GetTypeNameSave()})";
+              if (!string.IsNullOrWhiteSpace(collectionType)) {
+                pTypeName = $"*{collectionType}*<{string.Join(",", elementTypeNamesOrLinks)}>";
               }
-              if (array) {
-                pTypeName = pTypeName + "[] *(array)*";
+              else if (array) {
+                pTypeName = $"{elementTypeNamesOrLinks[0]}[] *(array)*";
               }
+              else {
+                pTypeName = elementTypeNamesOrLinks[0];
+              }
+
               if (nullable || (svcMthPrm.IsOptional && svcMthPrm.ParameterType.IsValueType)) {
-                pTypeName = pTypeName + "? *(nullable)*";
+                pTypeName = pTypeName + "?";
                 //initializer = " = null;";
               }
 
@@ -145,19 +177,31 @@ namespace CodeGeneration.Default {
             string pTypeName;
             bool nullable;
             bool array;
-            Type realType;
-            pTypeName = svcMth.ReturnType.GetTypeNameSave(out nullable, out realType, out array);
+            string collectionType;
+            Type[] elementTypes;
 
-            if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
-              pTypeName = $"[{pTypeName}](#{realType.GetTypeNameSave()})";
+            pTypeName = svcMth.ReturnType.GetTypeNameSave(out nullable, out elementTypes, out array, out collectionType);
+            var elementTypeNamesOrLinks = new List<string>();
+            foreach (Type et in elementTypes) {
+              string argName = et.GetTypeNameSave();
+              if (this.ProcessCandidate(et, modelTypeBuffer, cfg.namespaceWildcardsForModelImport)) {
+                elementTypeNamesOrLinks.Add($"[{argName}](#{argName})");
+              }
+              else {
+                elementTypeNamesOrLinks.Add(argName);
+              }
             }
-            if (array) {
-              pTypeName = pTypeName + "[] *(array)*";
+
+            if (!string.IsNullOrWhiteSpace(collectionType)) {
+              pTypeName = $"*{collectionType}*<{string.Join(",", elementTypeNamesOrLinks)}>";
             }
-            if (nullable) {
-              pTypeName = pTypeName + "? *(nullable)*";
-              //initializer = " = null;";
+            else if (array) {
+              pTypeName = $"{elementTypeNamesOrLinks[0]}[] *(array)*";
             }
+            else {
+              pTypeName = elementTypeNamesOrLinks[0];
+            }
+ 
             writer.WriteLine("**return value:** " + pTypeName);
           }
           else {
@@ -172,11 +216,11 @@ namespace CodeGeneration.Default {
       writer.WriteLine("");
       writer.WriteLine("");
 
-      if (modelTypes.Any()) {
+      if (modelTypeBuffer.Any()) {
 
         writer.WriteLine($"# Models:");
 
-        foreach (var modelType in modelTypes.OrderBy((t)=> t.FullName)) {
+        foreach (var modelType in modelTypeBuffer.OrderBy((t)=> t.FullName)) {
           writer.WriteLine("");
           writer.WriteLine("");
           writer.WriteLine("");
@@ -223,27 +267,34 @@ namespace CodeGeneration.Default {
             string pTypeName;
             bool nullable;
             bool array;
-            Type realType;
-            pTypeName = prop.PropertyType.GetTypeNameSave(out nullable, out realType,out array);
-            
-            if (this.ProcessCandidate(realType, modelTypes, cfg.namespaceWildcardsForModelImport)) {
-              pTypeName = $"[{pTypeName}](#{realType.GetTypeNameSave()})";
+            string collectionType;
+            Type[] elementTypes;
+
+            pTypeName = prop.PropertyType.GetTypeNameSave(out nullable, out elementTypes, out array, out collectionType);
+            var elementTypeNamesOrLinks = new List<string>();
+            foreach (Type et in elementTypes) {
+              string argName = et.GetTypeNameSave();
+              if (this.ProcessCandidate(et, modelTypeBuffer, cfg.namespaceWildcardsForModelImport)) {
+                elementTypeNamesOrLinks.Add($"[{argName}](#{argName})");
+              }
+              else {
+                elementTypeNamesOrLinks.Add(argName);
+              }
             }
-            if (array) {
-              pTypeName = pTypeName + "[] *(array)*";
+
+            if (!string.IsNullOrWhiteSpace(collectionType)) {
+              pTypeName = $"*{collectionType}*<{string.Join(",", elementTypeNamesOrLinks)}>";
             }
-            if (nullable || (!hasRequiredAttribute && prop.PropertyType.IsValueType)) {
-              pTypeName = pTypeName + "? *(nullable)*";
-              //initializer = " = null;";
+            else if (array) {
+              pTypeName = $"{elementTypeNamesOrLinks[0]}[] *(array)*";
+            }
+            else {
+              pTypeName = elementTypeNamesOrLinks[0];
             }
 
             writer.WriteLine($"|{prop.Name}|{pTypeName}|{description}|");
 
           }
-
-
-
-
         }
 
       }
@@ -271,11 +322,14 @@ namespace CodeGeneration.Default {
       this.ProcessCandidate(currentType.BaseType, modelTypes, wc);
 
       foreach (var prop in currentType.GetProperties()) {
-        Type realType;
+        Type[] elementTypes;
         bool nullable;
         bool array;
-        prop.PropertyType.GetTypeNameSave(out nullable, out realType, out array);
-        this.ProcessCandidate(realType, modelTypes, wc);
+        string collectionType;
+        prop.PropertyType.GetTypeNameSave(out nullable, out elementTypes, out array, out collectionType);
+        foreach (Type elementType in elementTypes) {
+        this.ProcessCandidate(elementType, modelTypes, wc);
+        }
       }
 
     }
@@ -300,7 +354,7 @@ namespace CodeGeneration.Default {
         string pattern = "^(" + Regex.Escape(nswc).Replace("\\*", ".*?") + ")$";
 
 
-        string sinitizedFullName = t.Namespace + "." + t.GetTypeNameSave(out var d1, out var d2, out var d3);
+        string sinitizedFullName = t.Namespace + "." + t.GetTypeNameSave();
         if (Regex.IsMatch(sinitizedFullName, pattern)) {
           return true;
         }

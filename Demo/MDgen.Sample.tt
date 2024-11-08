@@ -22,7 +22,9 @@
            inputFile = Path.GetFullPath(Host.ResolvePath(".\\bin\\Demo.dll")),
            assemblyResolveDir = Path.GetFullPath(Host.ResolvePath(".\\bin")),
 
-           interfaceTypeNamePattern = "MyBusinessNamespace.I*",
+           interfaceTypeNamePatterns = new string[] {
+             "MyBusinessNamespace.I*"
+           },
 
            requireXmlDocForNamespaces = new string[] { 
              "MyBusinessNamespace",

@@ -1,10 +1,15 @@
 ﻿{
   "inputFile": "..\\..\\Demo\\bin\\Demo.dll",
-  "template": "MvcControllers",
-  "interfaceTypeNamePattern": "MyBusinessNamespace.I*",
-  "modelTypeNameIncludePatterns": [
-    "MyBusinessNamespace.*"
+  "template": "Default",
+  "interfaceTypeNamePatterns": [
+    "MyBusinessNamespace.I*"
   ],
-  "generateSwashbuckleAttributesForControllers": true,
-  "customAttributesPerControllerMethod": "RequireBaererAuth(\"{C}/{O}\")"
+  "requireXmlDocForNamespaces": [
+    "MyBusinessNamespace",
+    "System.Data.Fuse"
+  ],
+  "namespaceWildcardsForModelImport": [
+    "MyBusinessNamespace.*",
+    "System.Data.Fuse.*"
+  ]
 }
